@@ -1,0 +1,18 @@
+[project]
+name = "minRL"
+version = "0.0.2"
+authors = [
+  { name="Ricky Ding", email="e0134117@u.nus.edu" },
+]
+description = "Deep Reinforcement Learning for minimalists."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/tesla-cat/minRL"
+Issues = "https://github.com/tesla-cat/minRL/issues"
