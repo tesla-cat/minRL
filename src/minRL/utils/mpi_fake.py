@@ -15,6 +15,10 @@ def normalize(x):
     return (x - np.mean(x)) / np.std(x)
 
 
+def avg(x):
+    return x
+
+
 # torch
 
 

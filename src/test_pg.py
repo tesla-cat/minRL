@@ -1,5 +1,6 @@
 import gymnasium as gym
 
+from minRL.ppo.PPOClip import PPOClip
 from minRL.utils.nn_utils import mlp
 from minRL.vpg.VanillaPG import VanillaPG
 
@@ -11,6 +12,8 @@ o_dim = env.observation_space.shape[0]
 pi_net = mlp([o_dim, 64, 64, a_dim])
 V_net = mlp([o_dim, 64, 64, 1])
 
-pg = VanillaPG(discrete, a_dim, pi_net, V_net, pi_lr=2e-3)
-for e in range(500):
+UsedPG = VanillaPG if 0 else PPOClip
+
+pg = UsedPG(discrete, a_dim, pi_net, V_net, pi_lr=2e-3)
+for e in range(100):
     pg.train_once(pg.get_D_from_env(env))

@@ -1,5 +1,5 @@
 # cspell:ignore logp
-from typing import Dict
+from typing import Dict, Union
 
 import gymnasium as gym
 import numpy as np
@@ -12,7 +12,7 @@ from torch.optim import Adam
 import minRL.utils.mpi_fake as mpi
 from minRL.utils.nn_utils import discount_cum_sum, tensor
 
-BUFFER_TYPE = Dict[str, np.ndarray]
+BUFFER_TYPE = Dict[str, Union[np.ndarray, tc.Tensor]]
 
 
 class VanillaPG:
@@ -22,9 +22,12 @@ class VanillaPG:
         a_dim,
         pi_net: nn.Module,
         V_net: nn.Module,
-        seed=0,
         pi_lr=3e-4,
         V_lr=1e-3,
+        V_iters=80,
+        gam=0.99,
+        lam=0.97,
+        seed=0,
     ):
         mpi.start_workers()
         mpi.setup_torch()
@@ -34,29 +37,28 @@ class VanillaPG:
         np.random.seed(s.seed)
 
         s.discrete = discrete
-        s.log_std = nn.Parameter(tensor(np.full(a_dim, -0.5)))
         s.pi_net, s.V_net = pi_net, V_net
+        s.V_iters = V_iters
+        s.gam, s.lam = gam, lam
 
+        s.log_std = nn.Parameter(tensor(np.full(a_dim, -0.5)))
         s.pi_params = list(s.pi_net.parameters()) + [s.log_std]
         s.V_params = list(s.V_net.parameters())
         s.pi_opt = Adam(s.pi_params, lr=pi_lr)
         s.V_opt = Adam(s.V_params, lr=V_lr)
         mpi.sync_params(s.pi_params + s.V_params)
 
-    def train_once(
-        s,
-        D: BUFFER_TYPE,
-        gam=0.99,
-        lam=0.97,
-        V_iters=80,
-    ):
-        # =====================================
-        # 4, 5: compute R and A (requires: r, ended, V, V_next, o, a, logp)
+    def train_once(s, D: BUFFER_TYPE):
+        # requires: r, ended, V, V_next, o, a, logp
+        D = s.find_R_and_A(D)
+        s.update_pi(D)
+        s.update_V(D)
 
+    def find_R_and_A(s, D: BUFFER_TYPE):
+        # 4, 5: compute R and A
         for k in ["R", "A"]:
             D[k] = np.zeros_like(D["r"])
-        start = 0
-        N = len(D["r"])
+        start, N = 0, len(D["r"])
         for i in range(N):
             if D["ended"][i]:
                 V_next = D["V_next"][i]
@@ -64,34 +66,28 @@ class VanillaPG:
                 r = np.append(D["r"][slc], V_next)
                 V = np.append(D["V"][slc], V_next)
                 # GAE-lambda advantage estimation
-                A = r[:-1] + gam * V[1:] - V[:-1]
-                D["A"][slc] = discount_cum_sum(A, gam * lam)
-                D["R"][slc] = discount_cum_sum(r, gam)[:-1]
+                A = r[:-1] + s.gam * V[1:] - V[:-1]
+                D["A"][slc] = discount_cum_sum(A, s.gam * s.lam)
+                D["R"][slc] = discount_cum_sum(r, s.gam)[:-1]
                 start = i + 1
         D["A"] = mpi.normalize(D["A"])
-        D = {k: tensor(v) for k, v in D.items()}
+        return {k: tensor(v) for k, v in D.items()}
 
-        # ======================================
+    def update_pi(s, D: BUFFER_TYPE):
         # 6, 7: estimate pg and optimize
-        o, a, A, R, logp_old = D["o"], D["a"], D["A"], D["R"], D["logp"]
-
+        o, a, A = D["o"], D["a"], D["A"]
         s.pi_opt.zero_grad()
         pi = s.get_pi(o)
         logp = s.get_logp(pi, a)
-        pi_loss = -(logp * A).mean()
-        if 0:
-            # shouldn't logp_old and logp be the same as pi is not updated yet?
-            kl = (logp_old - logp).mean().item()
-            ent = pi.entropy().mean().item()
-            print(f"kl: {kl}, ent: {ent}")
-        pi_loss.backward()
+        loss = -(logp * A).mean()
+        loss.backward()
         mpi.avg_grads(s.pi_params)
         s.pi_opt.step()
 
-        # =============================
+    def update_V(s, D: BUFFER_TYPE):
         # 8: fit V
-
-        for i in range(V_iters):
+        o, R = D["o"], D["R"]
+        for _ in range(s.V_iters):
             s.V_opt.zero_grad()
             loss = ((s.get_V(o) - R) ** 2).mean()
             loss.backward()
