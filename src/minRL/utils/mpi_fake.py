@@ -1,14 +1,14 @@
 import numpy as np
+import torch as tc
 
 # general
 
 
-def start_workers():
-    pass
-
-
-def proc_id():
-    return 0
+def start_workers(seed=0):
+    # setup_torch
+    # seed += 1000 * proc_id
+    tc.manual_seed(seed)
+    np.random.seed(seed)
 
 
 def normalize(x):
@@ -20,10 +20,6 @@ def avg(x):
 
 
 # torch
-
-
-def setup_torch():
-    pass
 
 
 def avg_grads(params):

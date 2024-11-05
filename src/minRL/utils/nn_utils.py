@@ -16,6 +16,8 @@ def discount_cum_sum(x: np.ndarray, g):
 
 
 def tensor(x):
+    if isinstance(x, dict):
+        return {k: tensor(v) for k, v in x.items()}
     return tc.as_tensor(x, dtype=tc.float32)
 
 

@@ -9,11 +9,11 @@ class PPOClip(VanillaPG):
     max_kl = 0.015
 
     def update_pi(s, D: BUFFER_TYPE):
-        o, a, A, logp_old = D["o"], D["a"], D["A"], D["logp"]
+        o, a_dic, A, logp_old = D["o"], D["a_dic"], D["A"], D["logp"]
         for _ in range(s.pi_iters):
             s.pi_opt.zero_grad()
-            pi = s.get_pi(o)
-            logp = s.get_logp(pi, a)
+            pi_dic = s.pi_net.get_pi(o)
+            logp = s.pi_net.get_logp(pi_dic, a_dic)
 
             ratio = tc.exp(logp - logp_old)
             r_clip = tc.clamp(ratio, 1 - s.eps, 1 + s.eps)
