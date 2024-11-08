@@ -1,13 +1,14 @@
 # cspell:ignore logp
 from typing import Dict, List, Union
 
+import numpy as np
 import torch as tc
 import torch.nn as nn
 from torch.distributions import Categorical, Normal
 
 NETS_TYPE = Dict[str, Dict[str, Union[nn.Module, List[float]]]]
 PI_DIC_TYPE = Dict[str, Union[Categorical, Normal]]
-A_DIC_TYPE = Dict[str, tc.Tensor]
+A_DIC_TYPE = Dict[str, np.ndarray]
 
 
 class MixedActor(nn.Module):
@@ -27,7 +28,7 @@ class MixedActor(nn.Module):
             if "values" in s.nets[k]:
                 pi = Categorical(logits=logits)
             else:
-                mean, log_std = logits
+                mean, log_std = logits.T
                 pi = Normal(mean, log_std.exp())
             pi_dic[k] = pi
         return pi_dic
@@ -36,13 +37,14 @@ class MixedActor(nn.Module):
         return sum([pi.log_prob(a_dic[k]) for k, pi in pi_dic.items()])
 
     def map_actions(s, a_dic: A_DIC_TYPE):
-        a2_dic = {}
+        a2_dic: A_DIC_TYPE = {}
         for k, a in a_dic.items():
             if "values" in s.nets[k]:
-                a2 = s.nets[k]["values"][a.item()]
+                values = s.nets[k]["values"]
+                a2 = np.array([values[i] for i in a])
             else:
                 L, H = s.nets[k]["range"]
-                a2 = L + (a.tanh().item() + 1) / 2 * (H - L)
+                a2 = L + (np.tanh(a) + 1) / 2 * (H - L)
             a2_dic[k] = a2
         return a2_dic
 

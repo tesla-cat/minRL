@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 import torch as tc
 import torch.nn as nn
@@ -27,3 +29,11 @@ def mlp(sizes, act=nn.Tanh, act_out=nn.Identity):
     layers = sum(layers, start=[])
     layers[-1] = act_out()
     return nn.Sequential(*layers)
+
+
+def add_record(D, i, dic: Dict, N):
+    for k, v in dic.items():
+        if k not in D:
+            shape = v.shape if isinstance(v, np.ndarray) else ()
+            D[k] = np.zeros((N, *shape), np.float32)
+        D[k][i] = v

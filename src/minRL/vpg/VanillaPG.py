@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.optim import Adam
 
 import minRL.utils.mpi_fake as mpi
-from minRL.utils.nn_utils import discount_cum_sum, tensor
+from minRL.utils.nn_utils import add_record, discount_cum_sum, tensor
 from minRL.vpg.MixedActor import MixedActor
 
 BUFFER_TYPE = Dict[str, Union[np.ndarray, tc.Tensor]]
@@ -120,11 +120,3 @@ class VanillaPG:
         print(f"mean R: {np.mean(R_arr)}")
         D["a_dic"] = {"action": D["a"]}
         return D
-
-
-def add_record(D, i, dic: Dict, N):
-    for k, v in dic.items():
-        if k not in D:
-            shape = v.shape if isinstance(v, np.ndarray) else ()
-            D[k] = np.zeros((N, *shape), np.float32)
-        D[k][i] = v

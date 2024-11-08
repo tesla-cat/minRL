@@ -58,12 +58,12 @@ for e in range(100):
     - Only supports either `Box (Normal)` or `Discrete (Categorical)` action spaces, not arbitrary mixture of them
 
 - `VPG` I wrote:
-    - [30 lines @ nn_utils.py](./src/minRL/utils/nn_utils.py)
-        - Contains `discount_cum_sum, tensor, mlp`
+    - [39 lines @ nn_utils.py](./src/minRL/utils/nn_utils.py)
+        - Contains `discount_cum_sum, tensor, mlp, add_record`
     - [47 lines @ MixedActor.py](./src/minRL/vpg/MixedActor.py)
         - Contains `MixedActor`
-    - [130 lines @ VanillaPG.py](./src/minRL/vpg/VanillaPG.py)
-        - Contains `VanillaPG, add_record`
+    - [122 lines @ VanillaPG.py](./src/minRL/vpg/VanillaPG.py)
+        - Contains `VanillaPG`
     - No highly nested classes
     - Neural Network models **decoupled** from RL algorithms
     - All key equations in one place, following the [pseudo-code below](https://spinningup.openai.com/en/latest/algorithms/vpg.html#pseudocode)

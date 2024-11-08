@@ -1,6 +1,6 @@
 [project]
 name = "minRL"
-version = "0.0.4"
+version = "0.0.5"
 authors = [
   { name="Ricky Ding", email="e0134117@u.nus.edu" },
 ]
