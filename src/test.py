@@ -1,12 +1,3 @@
-# minRL: Deep Reinforcement Learning for `minimalists`
-
-```cmd
-pip install minRL
-```
-
-- comparison with [OpenAI spin-up ppo](https://spinningup.openai.com/en/latest/index.html):
-
-```py
 from minRL.ppo import PPOClip, Recorder, gym, make_actor_critic, np, tc
 from minRL.spin_ppo import ppo as spin_ppo
 
@@ -35,7 +26,3 @@ for id in [
     )
 
     rec.save()
-
-```
-
-![](./src/recorder.png)
